@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SlimRiff Customizer</title>
+    <script src="js/html2canvas.min.js"></script>
+    <script src="js/jspdf.umd.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+
+      .container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .controls {
+        flex: 1;
+        min-width: 300px;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        max-height: 800px;
+        overflow-y: auto;
+      }
+
+      .editor {
+        flex: 2;
+        min-width: 400px;
+        position: relative;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .sash-container {
+        width: 400px;
+        height: 600px;
+        position: relative;
+        margin: 0 auto;
+      }
+
+      .sash {
+        width: 100%;
+        height: 100%;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-color: black; /* Default sash color */
+      }
+
+      .draggable {
+        position: absolute;
+        cursor: move;
+        padding: 5px;
+        border: 1px dashed transparent;
+        font-family: Impact, sans-serif;
+        color: gold;
+        text-shadow: 1px 1px 1px #000;
+        text-align: center;
+        user-select: none;
+      }
+
+      .draggable:hover {
+        border-color: #999;
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+
+      input,
+      select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+
+      .btn {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 10px;
+        width: 100%;
+      }
+
+      .btn:hover {
+        background-color: #45a049;
+      }
+
+      .btn-secondary {
+        background-color: #2196f3;
+      }
+
+      .btn-secondary:hover {
+        background-color: #0b7dda;
+      }
+
+      .btn-danger {
+        background-color: #f44336;
+      }
+
+      .btn-danger:hover {
+        background-color: #d32f2f;
+      }
+
+      .preview {
+        margin-top: 20px;
+        display: none;
+      }
+
+      .preview img {
+        max-width: 100%;
+        border: 1px solid #ddd;
+      }
+
+      .logo-preview {
+        max-width: 50px;
+        max-height: 50px;
+        margin-top: 10px;
+      }
+
+      .color-picker {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 10px;
+      }
+
+      .color-option {
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 2px solid transparent;
+      }
+
+      .color-option.selected {
+        border-color: #000;
+      }
+
+      .instruction {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+      }
+
+      .font-size-controls {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .font-size-btn {
+        flex: 1;
+        padding: 5px;
+        background: #eee;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .font-size-btn:hover {
+        background: #ddd;
+      }
+
+      h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 30px;
+      }
+
+      .custom-field {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .custom-field input {
+        flex: 1;
+        margin-right: 10px;
+      }
+
+      .custom-field button {
+        background-color: #f44336;
+        color: white;
+        border: none;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+      }
+
+      .custom-fields-container {
+        margin-top: 15px;
+      }
+
+      .upload-sash {
+        margin-bottom: 20px;
+      }
+
+      .sash-preview {
+        width: 100px;
+        height: 150px;
+        margin-top: 10px;
+        object-fit: contain;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SlimRiff Customizer</h1>
+
+    <div class="container">
+      <div class="controls">
+        <div class="form-group upload-sash">
+          <label for="sashUpload">Upload Order Image:</label>
+          <input type="file" id="sashUpload" accept="image/*" />
+          <img id="sashPreview" class="sash-preview" />
+          <div class="instruction">
+            * Upload your order background image i.e Sash
+          </div>
+        </div>
+
+        <!-- <div class="form-group">
+                <label for="studentName">Student Name:</label>
+                <input type="text" id="studentName" placeholder="Enter student name">
+                <div class="font-size-controls">
+                    <button class="font-size-btn" onclick="adjustFontSize('name', -1)">-</button>
+                    <button class="font-size-btn" onclick="adjustFontSize('name', 1)">+</button>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="className">Class/Year:</label>
+                <input type="text" id="className" placeholder="Enter class or year">
+                <div class="font-size-controls">
+                    <button class="font-size-btn" onclick="adjustFontSize('class', -1)">-</button>
+                    <button class="font-size-btn" onclick="adjustFontSize('class', 1)">+</button>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="programme">Programme:</label>
+                <input type="text" id="programme" placeholder="Enter programme">
+                <div class="font-size-controls">
+                    <button class="font-size-btn" onclick="adjustFontSize('programme', -1)">-</button>
+                    <button class="font-size-btn" onclick="adjustFontSize('programme', 1)">+</button>
+                </div>
+            </div> -->
+
+        <div class="form-group">
+          <label>Custom Fields:</label>
+          <div id="customFieldsContainer" class="custom-fields-container"></div>
+          <button class="btn btn-secondary" onclick="addCustomField()">
+            Add Custom Field
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label for="logoUpload">Upload Logo:</label>
+          <input type="file" id="logoUpload" accept="image/*" />
+          <img id="logoPreview" class="logo-preview" style="display: none" />
+        </div>
+
+        <div class="form-group">
+          <label>Text Color:</label>
+          <div class="color-picker">
+            <div
+              class="color-option selected"
+              style="background-color: gold"
+              data-color="gold"
+            ></div>
+            <div
+              class="color-option"
+              style="background-color: white"
+              data-color="white"
+            ></div>
+            <div
+              class="color-option"
+              style="background-color: silver"
+              data-color="silver"
+            ></div>
+            <div
+              class="color-option"
+              style="background-color: red"
+              data-color="red"
+            ></div>
+            <div
+              class="color-option"
+              style="background-color: blue"
+              data-color="blue"
+            ></div>
+            <div
+              class="color-option"
+              style="background-color: green"
+              data-color="green"
+            ></div>
+          </div>
+        </div>
+
+        <button class="btn" onclick="downloadAsImage()">
+          Download as Image
+        </button>
+        <button class="btn btn-secondary" onclick="downloadAsPDF()">
+          Download as PDF
+        </button>
+        <div class="instruction">
+          * Drag and drop text elements to position them on the sash
+        </div>
+      </div>
+
+      <div class="editor">
+        <div id="sashCanvas" class="sash-container">
+          <div class="sash"></div>
+          <div
+            id="nameElement"
+            class="draggable"
+            style="top: 150px; left: 120px; font-size: 24px"
+          ></div>
+          <div
+            id="classElement"
+            class="draggable"
+            style="top: 200px; left: 150px; font-size: 20px"
+          ></div>
+          <div
+            id="programmeElement"
+            class="draggable"
+            style="top: 250px; left: 130px; font-size: 18px"
+          ></div>
+          <div
+            id="logoElement"
+            class="draggable"
+            style="top: 350px; left: 175px; width: 50px; height: 50px"
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      window.jsPDF = window.jspdf.jsPDF;
+
+      // Elements
+      const sashImage = document.querySelector(".sash");
+      const sashUpload = document.getElementById("sashUpload");
+      const sashPreview = document.getElementById("sashPreview");
+      const studentNameInput = document.getElementById("studentName");
+      const classNameInput = document.getElementById("className");
+      const programmeInput = document.getElementById("programme");
+      const logoUpload = document.getElementById("logoUpload");
+      const logoPreview = document.getElementById("logoPreview");
+      const customFieldsContainer = document.getElementById(
+        "customFieldsContainer"
+      );
+
+      const nameElement = document.getElementById("nameElement");
+      const classElement = document.getElementById("classElement");
+      const programmeElement = document.getElementById("programmeElement");
+      const logoElement = document.getElementById("logoElement");
+
+      const colorOptions = document.querySelectorAll(".color-option");
+      let customFieldCount = 0;
+      let customElements = {};
+
+      // Set initial sash image from the image in your prompt
+      // We're showing the black sash as a sample background
+      const sashBackgroundImage = "imgs/sash.png";
+      sashImage.style.backgroundImage = `url(${sashBackgroundImage})`;
+
+      // Handle sash image upload
+      sashUpload.addEventListener("change", function (e) {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (event) {
+            sashPreview.src = event.target.result;
+            sashPreview.style.display = "block";
+            sashImage.style.backgroundImage = `url(${event.target.result})`;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // Initialize draggable elements
+      makeDraggable(nameElement);
+      makeDraggable(classElement);
+      makeDraggable(programmeElement);
+      makeDraggable(logoElement);
+
+      // Handle input changes
+      studentNameInput.addEventListener("input", function () {
+        nameElement.textContent = this.value || "Student Name";
+      });
+
+      classNameInput.addEventListener("input", function () {
+        classElement.textContent = this.value || "Class 2025";
+      });
+
+      programmeInput.addEventListener("input", function () {
+        programmeElement.textContent = this.value || "Computer Science";
+      });
+
+      // Add custom field
+      function addCustomField() {
+        customFieldCount++;
+        const id = `custom-field-${customFieldCount}`;
+
+        // Create input container
+        const fieldContainer = document.createElement("div");
+        fieldContainer.className = "form-group";
+        fieldContainer.id = `container-${id}`;
+
+        // Create label and input
+        const label = document.createElement("label");
+        label.textContent = `Custom Field ${customFieldCount}:`;
+        label.setAttribute("for", id);
+
+        const inputGroup = document.createElement("div");
+        inputGroup.className = "custom-field";
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.id = id;
+        input.placeholder = "Enter custom text";
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.innerHTML = "&times;";
+        deleteBtn.onclick = function () {
+          removeCustomField(id);
+        };
+
+        // Create font size controls
+        const fontControls = document.createElement("div");
+        fontControls.className = "font-size-controls";
+
+        const minusBtn = document.createElement("button");
+        minusBtn.className = "font-size-btn";
+        minusBtn.textContent = "-";
+        minusBtn.onclick = function () {
+          adjustFontSize(id, -1);
+        };
+
+        const plusBtn = document.createElement("button");
+        plusBtn.className = "font-size-btn";
+        plusBtn.textContent = "+";
+        plusBtn.onclick = function () {
+          adjustFontSize(id, 1);
+        };
+
+        fontControls.appendChild(minusBtn);
+        fontControls.appendChild(plusBtn);
+
+        // Add to DOM
+        inputGroup.appendChild(input);
+        inputGroup.appendChild(deleteBtn);
+
+        fieldContainer.appendChild(label);
+        fieldContainer.appendChild(inputGroup);
+        fieldContainer.appendChild(fontControls);
+
+        customFieldsContainer.appendChild(fieldContainer);
+
+        // Create draggable element on the sash
+        const customElement = document.createElement("div");
+        customElement.id = id;
+        customElement.className = "draggable";
+        customElement.style.top = `${300 + customFieldCount * 30}px`;
+        customElement.style.left = "140px";
+        customElement.style.fontSize = "18px";
+        customElement.textContent = "Custom Text";
+
+        const sashCanvas = document.getElementById("sashCanvas");
+        sashCanvas.appendChild(customElement);
+
+        // Track the element
+        customElements[id] = customElement;
+
+        // Make the element draggable
+        makeDraggable(customElement);
+
+        // Handle input changes
+        input.addEventListener("input", function () {
+          customElement.textContent = this.value || "Custom Text";
+        });
+
+        // Update text color
+        const selectedColor = document
+          .querySelector(".color-option.selected")
+          .getAttribute("data-color");
+        customElement.style.color = selectedColor;
+      }
+
+      // Remove custom field
+      function removeCustomField(id) {
+        // Remove the form group
+        const container = document.getElementById(`container-${id}`);
+        if (container) {
+          container.remove();
+        }
+
+        // Remove the draggable element
+        const element = document.getElementById(id);
+        if (element) {
+          element.remove();
+        }
+
+        // Remove from tracking
+        delete customElements[id];
+      }
+
+      // Handle logo upload
+      logoUpload.addEventListener("change", function (e) {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (event) {
+            logoPreview.src = event.target.result;
+            logoPreview.style.display = "block";
+
+            logoElement.innerHTML = "";
+            const img = document.createElement("img");
+            img.src = event.target.result;
+            img.style.width = "100%";
+            img.style.height = "100%";
+            img.style.objectFit = "contain";
+            logoElement.appendChild(img);
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // Handle color selection
+      colorOptions.forEach((option) => {
+        option.addEventListener("click", function () {
+          const color = this.getAttribute("data-color");
+
+          // Update selected color UI
+          document
+            .querySelector(".color-option.selected")
+            .classList.remove("selected");
+          this.classList.add("selected");
+
+          // Apply color to all text elements
+          nameElement.style.color = color;
+          classElement.style.color = color;
+          programmeElement.style.color = color;
+
+          // Apply to custom elements
+          for (let id in customElements) {
+            customElements[id].style.color = color;
+          }
+        });
+      });
+
+      // Make elements draggable
+      function makeDraggable(element) {
+        let pos1 = 0,
+          pos2 = 0,
+          pos3 = 0,
+          pos4 = 0;
+
+        element.onmousedown = dragMouseDown;
+
+        function dragMouseDown(e) {
+          e.preventDefault();
+          // Get mouse position at startup
+          pos3 = e.clientX;
+          pos4 = e.clientY;
+          document.onmouseup = closeDragElement;
+          // Call function whenever mouse moves
+          document.onmousemove = elementDrag;
+        }
+
+        function elementDrag(e) {
+          e.preventDefault();
+          // Calculate new position
+          pos1 = pos3 - e.clientX;
+          pos2 = pos4 - e.clientY;
+          pos3 = e.clientX;
+          pos4 = e.clientY;
+          // Set element's new position
+          element.style.top = element.offsetTop - pos2 + "px";
+          element.style.left = element.offsetLeft - pos1 + "px";
+        }
+
+        function closeDragElement() {
+          // Stop moving when mouse button is released
+          document.onmouseup = null;
+          document.onmousemove = null;
+        }
+      }
+
+      // Adjust font size
+      function adjustFontSize(element, change) {
+        let targetElement;
+
+        // Check for default elements
+        switch (element) {
+          case "name":
+            targetElement = nameElement;
+            break;
+          case "class":
+            targetElement = classElement;
+            break;
+          case "programme":
+            targetElement = programmeElement;
+            break;
+          default:
+            // Custom field
+            targetElement = document.getElementById(element);
+            break;
+        }
+
+        if (targetElement) {
+          const currentSize = parseInt(
+            window.getComputedStyle(targetElement).fontSize
+          );
+          const newSize = currentSize + change;
+
+          if (newSize >= 12 && newSize <= 48) {
+            targetElement.style.fontSize = newSize + "px";
+          }
+        }
+      }
+
+      // Download as image
+      function downloadAsImage() {
+        const sashCanvas = document.getElementById("sashCanvas");
+
+        html2canvas(sashCanvas).then((canvas) => {
+          const link = document.createElement("a");
+          link.download = "graduation-sash.png";
+          link.href = canvas.toDataURL("image/png");
+          link.click();
+        });
+      }
+
+      // Download as PDF
+      function downloadAsPDF() {
+        const sashCanvas = document.getElementById("sashCanvas");
+
+        html2canvas(sashCanvas).then((canvas) => {
+          const imgData = canvas.toDataURL("image/png");
+          const pdf = new jsPDF("p", "mm", "a4");
+
+          // Calculate positions to center the image
+          const imgWidth = 150;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = pdf.internal.pageSize.getHeight();
+          const x = (pageWidth - imgWidth) / 2;
+          const y = 20;
+
+          pdf.addImage(imgData, "PNG", x, y, imgWidth, imgHeight);
+          pdf.save("graduation-sash.pdf");
+        });
+      }
+    </script>
+  </body>
+</html>
