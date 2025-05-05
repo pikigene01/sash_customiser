@@ -240,11 +240,11 @@
     <div class="container">
       <div class="controls">
         <div class="form-group upload-sash">
-          <label for="sashUpload">Upload Order Image:</label>
+          <label for="sashUpload">Upload BackGround Image:</label>
           <input type="file" id="sashUpload" accept="image/*" />
           <img id="sashPreview" class="sash-preview" />
           <div class="instruction">
-            * Upload your order background image i.e Sash
+            * Upload your background image i.e Sash
           </div>
         </div>
 
@@ -370,9 +370,6 @@
       const sashImage = document.querySelector(".sash");
       const sashUpload = document.getElementById("sashUpload");
       const sashPreview = document.getElementById("sashPreview");
-      const studentNameInput = document.getElementById("studentName");
-      const classNameInput = document.getElementById("className");
-      const programmeInput = document.getElementById("programme");
       const logoUpload = document.getElementById("logoUpload");
       const logoPreview = document.getElementById("logoPreview");
       const customFieldsContainer = document.getElementById(
@@ -393,6 +390,32 @@
       const sashBackgroundImage = "imgs/sash.png";
       sashImage.style.backgroundImage = `url(${sashBackgroundImage})`;
 
+
+       // Handle color selection
+       colorOptions.forEach((option) => {
+        option.addEventListener("click", function () {
+          const color = this.getAttribute("data-color");
+
+          // Update selected color UI
+          document
+            .querySelector(".color-option.selected")
+            .classList.remove("selected");
+          this.classList.add("selected");
+
+          // Apply color to all text elements
+          nameElement.style.color = color;
+          classElement.style.color = color;
+          programmeElement.style.color = color;
+
+          // Apply to custom elements
+        console.log(customElements);
+
+          for (let id in customElements) {
+            customElements[id].style.color = color;
+          }
+        });
+      });
+
       // Handle sash image upload
       sashUpload.addEventListener("change", function (e) {
         const file = e.target.files[0];
@@ -412,19 +435,6 @@
       makeDraggable(classElement);
       makeDraggable(programmeElement);
       makeDraggable(logoElement);
-
-      // Handle input changes
-      studentNameInput.addEventListener("input", function () {
-        nameElement.textContent = this.value || "Student Name";
-      });
-
-      classNameInput.addEventListener("input", function () {
-        classElement.textContent = this.value || "Class 2025";
-      });
-
-      programmeInput.addEventListener("input", function () {
-        programmeElement.textContent = this.value || "Computer Science";
-      });
 
       // Add custom field
       function addCustomField() {
@@ -489,7 +499,7 @@
         // Create draggable element on the sash
         const customElement = document.createElement("div");
         customElement.id = id;
-        customElement.className = "draggable";
+        customElement.className = `custom-field-${customFieldCount} draggable`;
         customElement.style.top = `${300 + customFieldCount * 30}px`;
         customElement.style.left = "140px";
         customElement.style.fontSize = "18px";
@@ -555,28 +565,7 @@
         }
       });
 
-      // Handle color selection
-      colorOptions.forEach((option) => {
-        option.addEventListener("click", function () {
-          const color = this.getAttribute("data-color");
-
-          // Update selected color UI
-          document
-            .querySelector(".color-option.selected")
-            .classList.remove("selected");
-          this.classList.add("selected");
-
-          // Apply color to all text elements
-          nameElement.style.color = color;
-          classElement.style.color = color;
-          programmeElement.style.color = color;
-
-          // Apply to custom elements
-          for (let id in customElements) {
-            customElements[id].style.color = color;
-          }
-        });
-      });
+     
 
       // Make elements draggable
       function makeDraggable(element) {
@@ -633,18 +622,22 @@
             break;
           default:
             // Custom field
-            targetElement = document.getElementById(element);
+            targetElement = document.querySelectorAll(`.${element}`);
             break;
         }
 
         if (targetElement) {
           const currentSize = parseInt(
-            window.getComputedStyle(targetElement).fontSize
+            targetElement[0]
+              ? window.getComputedStyle(targetElement[0]).fontSize
+              : window.getComputedStyle(targetElement).fontSize
           );
           const newSize = currentSize + change;
 
           if (newSize >= 12 && newSize <= 48) {
-            targetElement.style.fontSize = newSize + "px";
+            targetElement[0]
+              ? (targetElement[0].style.fontSize = newSize + "px")
+              : (targetElement.style.fontSize = newSize + "px");
           }
         }
       }
